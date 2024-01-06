@@ -1,18 +1,19 @@
 from pdfminer.high_level import extract_pages, extract_text
 
-for page_layout in extract_pages('example3.pdf'):
+for page_layout in extract_pages('int.pdf'):
     for element in page_layout:
-        #print(element)
+        print(element)
         pass
 
 import re
 import fitz
 
-pdf = fitz.open('example.pdf')
+pdf = fitz.open('int.pdf')
 
 page = pdf.load_page(0)
 text = page.get_text('text')
 text = text.lower()
+print(text)
 pdf.close()
 
 

@@ -62,3 +62,13 @@ print(input_text)
 print("\nExtracted Phrases:")
 for phrase in result:
     print(phrase)
+
+
+
+test = 'org2: открытому акционерному обществу "Уральская горно-металлургическая компания" (ИНН: 6606013640, ОГРН: 1026600727713) третье лицо: 660601364111'
+entities = re.compile(r'\b(\d{10}|\d{12})\b')  
+matches = entities.findall(test)
+plaintiff,defendant = matches
+
+
+print(defendant)
