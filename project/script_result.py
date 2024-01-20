@@ -2,7 +2,9 @@ import glob
 import re
 import fitz
 from pdfminer.high_level import extract_pages, extract_text
-
+import json
+from collections import deque
+from pprint import pprint
 """
 Название суда:
 
@@ -34,7 +36,7 @@ from pdfminer.high_level import extract_pages, extract_text
 
 PS:
 О/об может быть много
-
+бывает что нет о в начале
 TODO:
 1) Графический интерфейс скармливающий док и отдающий результат?
     - Парсер доков по абзацам, разбор на абзацы
@@ -101,38 +103,88 @@ def extract_inn(parties):
 
     return {"plaintiff_inns":plaintiff_inns, "defendant_inns":defendant_inns}
 
+def construct_result_json(court,parties,inns,resolution):
+    return json.dumps(
+        {
+            "court":court,
+            "plaintiff":parties.popleft(),
+            "defendant":parties.pop(),
+            "plaintiff_inn":inns.get('plaintiff_inns'),
+            "defendant_inn":inns.get('defendant_inns'),
+            "resolution":resolution
+        })
 
+def clear_newline_symbols(text):
+    return text.replace('\n', '') if text else ''
 
+def find_resolution(pdf):
+    last_page_num = pdf.page_count
+
+    last_page = pdf.load_page(last_page_num -1)
+    text = last_page.get_text('text').lower()
+    text = cleanup_text(text)
+    text = clear_newline_symbols(text)
+
+    regex_pattern = r'решил\s*:\s*(.*)'
+    match = re.search(regex_pattern, text)
+
+    if match:
+        extracted_text = match.group(1)
+        return extracted_text[:400]
+    else:
+        last_page = pdf.load_page(last_page_num -2)
+        text =last_page.get_text('text').lower()
+        text = cleanup_text(text)
+        text = clear_newline_symbols(text)
+
+        match = re.search(regex_pattern, text)
+        if match:
+            extracted_text = match.group(1)
+            return extracted_text[:400]
+    
 
 for name in sorted(glob.glob('documents/*')):
     """
     TODO
     * Предобработка перед получением инн?
+    * начало и конец дока
+    * извлечение решения
     """
+    result_json = {}
+
     print(f'doc:{name}')
     pdf = fitz.open(name)
+    resolution = find_resolution(pdf)
 
     page = pdf.load_page(0)
     line = page.get_text('text')[:2000]
 
     #line = extract_text(name)[:2000]
     line = cleanup_text(line).lower()
-
+    #print(line)
     court = find_court(line) if find_court(line) else print('Не найден суд')
+    cleared_court = clear_newline_symbols(court)
 
-    flattened_text = line.replace('\n', '')
+    #delete newline symbols
+    flattened_text = clear_newline_symbols(line)
     flattened_text = re.sub(r'\s+', ' ', flattened_text).strip()
 
     #print(flattened_text)
-    parties = find_parties(flattened_text)
+    parties = deque(find_parties(flattened_text))
 
     inns = None
     inns = extract_inn(parties)
 
-    print(f"""
-        СУД {court}
-        Истец {parties[0]}
-        Ответчик {parties[1]}
-        ИНН исца {inns.get('plaintiff_inns')}
-        ИНН ответчика {inns.get('defendant_inns')}""")
+    result = json.loads(construct_result_json(
+        cleared_court,
+        parties,
+        inns,
+        resolution
+        ))
+    
+    pprint(result)
+    
+    #pprint(result)
+    
+
 
