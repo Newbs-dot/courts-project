@@ -116,7 +116,7 @@ for name in sorted(glob.glob('test_documents/*')):
     #не парсятся если нет инн
     print(f'doc:{name}')
     pdf = fitz.open(name)
-
+    
 
     page = pdf.load_page(0)
     line = page.get_text('text')[:2000]
