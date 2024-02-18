@@ -59,6 +59,10 @@ h
 
 import re
 
+
+def clear_newline_symbols(text):
+    return text.replace('\n', '') if text else ''
+
 def cleanup_text(text):
     #Очищаем текст от лишних пробелов внутри слов и между ними
     whitespaces_between_characters = re.sub(r'(?<=\b\w)\s(?=\w\b)','', text)
@@ -75,20 +79,59 @@ def find_court(text):
     """
 
     #pattern = re.compile(r'арбитражный суд(.*?)(?:в составе|\n|$)')
+    text = clear_newline_symbols(text)
     pattern = re.compile(r'(.*?арбитражный апелляционный суд)|(арбитражный суд.*?)(?:в составе|\n|$)')
     result = pattern.search(text).group(0) if pattern.search(text) else None
-    return result
+
+    res = {'span':None,'court':None}
+    if pattern.search(text):
+        span = pattern.search(text).span()
+        result = result.strip()
+
+        #cleared_court = clear_newline_symbols(result)
+
+        res["span"] = span,
+        #res["court"] =cleared_court,
+        res['court'] = result
+        
+
+    return res
 
 def find_parties(prepared_text):
     #Находим истца и ответчика
-    pattern = re.compile(r'(?:заявлению|иску|заявления|заявление)\s+(.*?)\s+[кК]\s+(.*?)\s+[оО]б?\s+(.*$)')
+    pattern = re.compile(r'(?:заявлени[юяе]|иску)\s+(.*?)\s+[кК]\s+(.*?)\s+[оО]б?\s+(.*$)')
     matches = pattern.search(prepared_text)
 
-    plaintiff = matches.group(1).strip() if matches else None
-    defendant = matches.group(2).strip() if matches else None
+    parties = {}
+
+    plaintiff_w_inn = matches.group(1).strip() if matches else None
+
+    parties['plaintiff_w_inn'] = plaintiff_w_inn
+    if plaintiff_w_inn:
+        extract_pattern = re.search(r'(.*?)(?:\(инн|\(огрн)', plaintiff_w_inn)
+
+        if extract_pattern:
+            plaintiff = extract_pattern.group(1).strip()
+            parties['plaintiff'] = plaintiff
+            parties['plaintiff_span'] = extract_pattern.span()
+
+    defendant_w_inn = matches.group(2).strip() if matches else None
+
+    parties['defendant_w_inn'] = defendant_w_inn
+    if defendant_w_inn:
+        extract_pattern = re.search(r'(.*?)(?:\(инн|\(огрн)', defendant_w_inn)
+
+        if extract_pattern:
+            defendant = extract_pattern.group(1).strip()
+            parties['defendant'] = defendant
+            parties['defendant_span'] = extract_pattern.span()
+
+
     rest_of_text = matches.group(3).strip() if matches else None
-    
-    return plaintiff,defendant
+
+
+    return parties
+
 
 def extract_inn(parties):
     # извлекаем инн-ы из строк истца и ответчика
@@ -96,26 +139,51 @@ def extract_inn(parties):
     TODO
     * Проверка на третье лицо
     """
-    plaintiff,defendant = parties
+    plaintiff = parties.get('plaintiff_w_inn')
+    defendant = parties.get('defendant_w_inn')
+
+    inns = []
+
     inn_pattern = re.compile(r'\b(\d{10}|\d{12})\b')
-    plaintiff_inns = inn_pattern.findall(plaintiff) if plaintiff else None
-    defendant_inns = inn_pattern.findall(defendant) if defendant else None
+    plaintiff_inns = []
+    defendant_inns = []
 
-    return {"plaintiff_inns":plaintiff_inns, "defendant_inns":defendant_inns}
+    if plaintiff:
+        plaintiff_inns = inn_pattern.findall(plaintiff)
+        for match in re.finditer(inn_pattern, plaintiff):
+            if match:
+                inn = {
+                    "inn":match.group(1),
+                    "span":(match.start(), match.end())
+                }
+                inns.append(inn)
 
-def construct_result_json(court,parties,inns,resolution):
-    return json.dumps(
-        {
-            "court":court,
-            "plaintiff":parties.popleft(),
-            "defendant":parties.pop(),
-            "plaintiff_inn":inns.get('plaintiff_inns'),
-            "defendant_inn":inns.get('defendant_inns'),
-            "resolution":resolution
-        })
+    if defendant:    
+        defendant_inns = inn_pattern.findall(defendant)
+        for match in re.finditer(inn_pattern, defendant):
+            if match:
+                inn = {"inn":match.group(1), "span":(match.start(), match.end())}
+                inns.append(inn)
 
-def clear_newline_symbols(text):
-    return text.replace('\n', '') if text else ''
+
+    return {"plaintiff_inns":plaintiff_inns, "defendant_inns":defendant_inns, 'inns':inns}
+
+def construct_result_json(example, court, parties, inns):
+    return {
+        "example":example,
+        "court_entity" : (court.get('court'), court.get('span'), 'court'),
+        "plaintiff_entity" : (parties.get('plaintiff_w_inn'), parties.get('plaintiff_span'), 'party'),
+        "defendant_entity" : (parties.get('defendant_w_inn'), parties.get('defendant_span'),'party'),
+        "inns" : inns['inns'],
+    }
+
+    #"court":court, "plaintiff":parties.get('plaintiff'),
+    #"defendant":parties.get('defendant'), "plaintiff_inn":inns.get('plaintiff_inns'),
+    #"defendant_inn":inns.get('defendant_inns'), #"resolution":resolution
+
+
+
+
 
 def find_resolution(pdf):
     last_page_num = pdf.page_count
@@ -142,7 +210,7 @@ def find_resolution(pdf):
             extracted_text = match.group(1)
             return extracted_text[:400]
     
-
+result = {'result':[]}
 for name in sorted(glob.glob('documents/*')):
     """
     TODO
@@ -154,7 +222,7 @@ for name in sorted(glob.glob('documents/*')):
 
     print(f'doc:{name}')
     pdf = fitz.open(name)
-    resolution = find_resolution(pdf)
+    #resolution = find_resolution(pdf)
 
     page = pdf.load_page(0)
     line = page.get_text('text')[:2000]
@@ -163,28 +231,44 @@ for name in sorted(glob.glob('documents/*')):
     line = cleanup_text(line).lower()
     #print(line)
     court = find_court(line) if find_court(line) else print('Не найден суд')
-    cleared_court = clear_newline_symbols(court)
+    
 
     #delete newline symbols
     flattened_text = clear_newline_symbols(line)
     flattened_text = re.sub(r'\s+', ' ', flattened_text).strip()
 
     #print(flattened_text)
-    parties = deque(find_parties(flattened_text))
+    parties = find_parties(flattened_text)
 
     inns = None
     inns = extract_inn(parties)
-
-    result = json.loads(construct_result_json(
-        cleared_court,
-        parties,
-        inns,
-        resolution
+    #print(flattened_text)
+    pprint(construct_result_json(
+            flattened_text,
+            court,
+            parties,
+            inns,
+            #resolution
         ))
     
-    pprint(result)
+    result['result'].append(
+        construct_result_json(
+            flattened_text,
+            court,
+            parties,
+            inns,
+            #resolution
+        ))
+
     
-    #pprint(result)
+
+
+
+with open('result.json','w',encoding='utf8') as res:
+    res.write(json.dumps(result,ensure_ascii=False))
+
+with open('result.json','r',encoding='utf8') as t:
+    pprint(json.load(t))
     
 
 
