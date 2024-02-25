@@ -4,7 +4,9 @@ with open('./datasets/100_dataset.json',encoding='utf-8') as f:
   dataset = json.load(f)
 
 
-dataset = dataset['annotations']
+
+dataset = dataset['annotations'][70:101]
+print(len(dataset))
 
 # for annotation in dataset:
 #   print(annotation)
@@ -32,6 +34,6 @@ for text, annot in tqdm(dataset): # data in previous format
     doc.ents = ents # label the text with the ents
     db.add(doc)
 
-db.to_disk("./train.spacy") # save the docbin object
+db.to_disk("./test.spacy") # save the docbin object
 
 

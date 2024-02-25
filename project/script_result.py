@@ -1,7 +1,7 @@
 import glob
 import re
 import fitz
-from pdfminer.high_level import extract_pages, extract_text
+#from pdfminer.high_level import extract_pages, extract_text
 import json
 from collections import deque
 from pprint import pprint
@@ -132,6 +132,11 @@ def find_parties(prepared_text):
 
     return parties
 
+def find_cause(text):
+    #pattern = re.compile('[оО]б?\s+(.*$)')
+    pattern = re.compile(' о (.*?)(?=при участии|представители|$)')
+    result = pattern.findall(text)
+    return result
 
 def extract_inn(parties):
     # извлекаем инн-ы из строк истца и ответчика
@@ -211,7 +216,7 @@ def find_resolution(pdf):
             return extracted_text[:400]
     
 result = {'result':[]}
-for name in sorted(glob.glob('documents/*')):
+for name in sorted(glob.glob('train_documents/*')):
     """
     TODO
     * Предобработка перед получением инн?
@@ -229,6 +234,9 @@ for name in sorted(glob.glob('documents/*')):
 
     #line = extract_text(name)[:2000]
     line = cleanup_text(line).lower()
+    line = clear_newline_symbols(line)
+    print(line)
+    print(find_cause(line))
     #print(line)
     court = find_court(line) if find_court(line) else print('Не найден суд')
     
@@ -243,32 +251,32 @@ for name in sorted(glob.glob('documents/*')):
     inns = None
     inns = extract_inn(parties)
     #print(flattened_text)
-    pprint(construct_result_json(
-            flattened_text,
-            court,
-            parties,
-            inns,
-            #resolution
-        ))
+    # pprint(construct_result_json(
+    #         flattened_text,
+    #         court,
+    #         parties,
+    #         inns,
+    #         #resolution
+    #     ))
     
-    result['result'].append(
-        construct_result_json(
-            flattened_text,
-            court,
-            parties,
-            inns,
-            #resolution
-        ))
+    # result['result'].append(
+    #     construct_result_json(
+    #         flattened_text,
+    #         court,
+    #         parties,
+    #         inns,
+    #         #resolution
+    #     ))
 
     
 
 
 
-with open('result.json','w',encoding='utf8') as res:
-    res.write(json.dumps(result,ensure_ascii=False))
+# with open('result.json','w',encoding='utf8') as res:
+#     res.write(json.dumps(result,ensure_ascii=False))
 
-with open('result.json','r',encoding='utf8') as t:
-    pprint(json.load(t))
+# with open('result.json','r',encoding='utf8') as t:
+#     pprint(json.load(t))
     
 
 
