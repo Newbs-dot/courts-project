@@ -4,21 +4,21 @@ from regex_extractor import RegexExtractor
 from datetime import datetime
 import fitz
 import os
+from pprint import pprint
 
 class Parser:
     
-
     def __init__(self, model_path) -> None:
         self.model_path = model_path
 
-    def extract_raw_page(self, page_num, doc_path):
+    def _extract_raw_page(self, page_num, doc_path):
         pdf = fitz.open(doc_path)
         page = pdf.load_page(page_num)
         text = page.get_text('text')
 
         return text
     
-    def find_case_number(self, doc_path):
+    def _find_case_number(self, doc_path):
         #Поиск в названии
         doc_name = os.path.basename(doc_path)
         if '_' in doc_name:
@@ -27,8 +27,35 @@ class Parser:
 
             case_date = datetime.strptime(case_date,"%Y%m%d").strftime("%d-%m-%Y")
 
-            return {"CaseNumber":case_num, "CaseDate": case_date}
-        
+            return {"CaseNumber": case_num, "CaseDate": case_date}
+    
+    def _find_case_date_num(self, doc_path):
+        case_date_num = self._find_case_number(doc_path)
+        case_num = RegexExtractor.find_case(self._extract_raw_page(0, doc_path))
+        return {"CaseNumber": case_num, "CaseDate": case_date_num.get('CaseDate')}
+    
+    def _find_court(self, doc_path):
+        #TODO find with yargy,etc
+        court = RegexExtractor.find_court(self._extract_raw_page(0, doc_path))
+        return court
+    
+    def _find_cause(self, doc_path):
+        #TODO find with spacy
+        cause = RegexExtractor.find_cause(self._extract_raw_page(0, doc_path))
+        return cause
+
+    def extract_info(self, doc_path):
+        case_date_num = self._find_case_date_num(doc_path)
+        court = self._find_court(doc_path)
+        cause = self._find_cause(doc_path)
+        return {
+            "CaseNumber": case_date_num.get('CaseNumber'),
+            "CaseDate": case_date_num.get('CaseDate'),
+            "Court": court,
+            "Cause": cause,
+        }
+
+
 test_text2 = """
 Арбитражный суд г. Москвы в составе:
 Председательствующего судьи Федоровой Д.Н. (единолично),
@@ -49,13 +76,7 @@ test_text = 'Арбитражный суд Новосибирской облас
 
 doc_name = './test_documents/A83-19868-2020_20201207_Opredelenie (1).pdf'
 parser = Parser('.\output\model-best')
-page = parser.extract_raw_page(0,doc_name)
-regex_extractor = RegexExtractor()
-case = regex_extractor.find_case(page)
-date = parser.find_case_number(doc_name)
-court = regex_extractor.find_court(page)
-cause = regex_extractor.find_cause(page)
 
-print(case, date, court,cause)
+pprint(parser.extract_info(doc_name))
 
 
