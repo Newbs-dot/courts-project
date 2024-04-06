@@ -9,15 +9,15 @@ db = DocBin()
 import time
 
 
-f = open('datasets/238_cleared.json', 'r', encoding='utf-8')
-train_data = json.load(f)[200:250]
+f = open('datasets/238_sums.json', 'r', encoding='utf-8')
+train_data = json.load(f)[200:]
 
-# with open('datasets/238_cleared.json', 'w', encoding='utf-8') as f:
+# with open('datasets/238_sums.json', 'w', encoding='utf-8') as f:
 #     data = []
 #     for document in tqdm(train_data):
 #         labels = []
 #         for label in document['label']:
-#             if label['labels'][0] not in ('DEBT','FEE','PENALTY','PENNY','LOSS','PERCENTS','SUM','INTELLECTUAL-DEBT','MORAL-EXPENSES','COMPENSATION','FORFEIT','DEBT-PART','UNJUST-ENRICHMENT'):
+#             if label['labels'][0] in ('DEBT','FEE','PENALTY','PENNY','LOSS','PERCENTS','SUM','INTELLECTUAL-DEBT','MORAL-EXPENSES','COMPENSATION','FORFEIT','DEBT-PART','UNJUST-ENRICHMENT'):
 #                 labels.append(label)
 
 #         data.append(
@@ -35,7 +35,7 @@ for document in tqdm(train_data):
     spans = []
 
     for label in document['label']:
-        print(label['labels'][0])
+        #print(label['labels'][0])
         span = doc.char_span(label['start'], label['end'], label=label['labels'][0], alignment_mode='contract')
 
         if span is not None:
@@ -43,8 +43,12 @@ for document in tqdm(train_data):
 
     # group = SpanGroup(doc, name="sc", spans=spans)
     # #print(spans)
-    doc.ents=spans
+    try:
+
+        doc.ents=spans
+    except:
+        print(spans)
     # doc.spans["sc"] = group
     db.add(doc)
     
-db.to_disk('./label_studio_valid_237.spacy')
+db.to_disk('./label_studio_valid_sums.spacy')
