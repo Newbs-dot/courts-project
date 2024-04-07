@@ -1,7 +1,7 @@
 import re
 
 class Preprocessor:
-
+    """Класс для предобработки текста"""
     def __init__(self) -> None:
         pass
     

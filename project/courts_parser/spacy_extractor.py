@@ -5,7 +5,8 @@ from difflib import SequenceMatcher
 
 
 class SpacyExtractor:
-
+    """Класс для извлечения данных с помощью моделей nlp SpaCy"""
+    
     def __init__(self, main_model_path, sums_model_path) -> None:
         self.model_path = main_model_path
         self.sums_model_path = sums_model_path

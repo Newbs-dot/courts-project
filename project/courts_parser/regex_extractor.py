@@ -7,7 +7,7 @@ OGRN = re.compile(r'(ОГРН|ОГРНИП):?\s+(\d{13}|\d{15})\b', flags = re.M
 
 
 class RegexExtractor:
-
+    """Класс для извлечения данных с помощью Regex"""
     @staticmethod
     def find_cause(text):
         #TODO интелелктуальной о запрете, split multiple causes
