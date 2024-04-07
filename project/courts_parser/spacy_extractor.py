@@ -6,20 +6,19 @@ from difflib import SequenceMatcher
 
 class SpacyExtractor:
 
-    def __init__(self,main_model_path,sums_model_path) -> None:
+    def __init__(self, main_model_path, sums_model_path) -> None:
         self.model_path = main_model_path
         self.sums_model_path = sums_model_path
-        
+        self.sums_doc = None
+        self.general_info_doc = None
 
-    def find_tags_nlp(self, text):
-        """Поиск общих тегов"""
-        nlp = spacy.load(self.model_path)
-        return nlp(text)
-    
-    def find_tags_sums(self, text):
-        """Поиск тегов сумм"""
-        nlp = spacy.load(self.sums_model_path)
-        return nlp(text)
+    def _find_docs(self, text):
+        """Извлечение сущностей суда и сумм"""
+        nlp_general_info = spacy.load(self.model_path)
+        nlp_sums = spacy.load(self.sums_model_path)
+
+        self.general_info_doc = nlp_general_info(text)
+        self.sums_doc = nlp_sums(text)
     
     def _find_parties(self, doc):
         """Извелечение сторон"""
@@ -90,7 +89,7 @@ class SpacyExtractor:
                     found_requisites.add(req)
         
         else:
-            #Если нет реквизитов, проверить похожих в найденных участниках
+            #Если нет реквизитов, проверить на похожесть в найденных участниках
             for found_party in found_parties:
                 if SequenceMatcher(None, party['PARTY'],found_party).ratio() > 70:
                     dublicate = True
@@ -104,16 +103,14 @@ class SpacyExtractor:
             parties[side].append(party)
         
 
-    # def _exclude_parties(self, parties):
-    # for party in side
-    # check if party exists with same requisites or if no requisites then check with levenstein
 
+    def extract_all(self, text):
+        """Извлечение всей информации из текста документа"""
+        self._find_docs(text)
 
-    def extract_all(self, doc, doc_sums):
-        """Извлечение информации из документа"""
-        res = {'PARTIES': self._find_parties(doc),
-               'COURT_INFO': self._extract_court_info(doc),
-               'SUMS': self._find_sums(doc_sums)}
+        res = {'PARTIES': self._find_parties(self.general_info_doc),
+               'COURT_INFO': self._extract_court_info(self.general_info_doc),
+               'SUMS': self._find_sums(self.sums_doc)}
 
         return json.dumps(res, ensure_ascii=False)
 

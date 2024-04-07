@@ -34,31 +34,14 @@ class Parser:
 
             return {"CaseNumber": case_num, "CaseDate": case_date}
     
-    def _find_case_date_num(self, doc_path):
-        case_date_num = self._find_case_number(doc_path)
-            #case_num = RegexExtractor.find_case(self._extract_raw_page(0, doc_path))
-        if case_date_num:
-            return {"CaseNumber": case_date_num.get('CaseNumber'), "CaseDate": case_date_num.get('CaseDate')}
-    
-    def _find_court(self, doc_path):
-        #TODO find with yargy,etc
-        court = RegexExtractor.find_court(self.extract_raw_page(0, doc_path))
-        return court
-    
-    def _find_cause(self, doc_path):
-        #TODO find with spacy
-        cause = RegexExtractor.find_cause(self.extract_raw_page(0, doc_path))
-        return cause
-    
-    def _find_parties(self, doc_path):
-        cause = RegexExtractor.find_parties(self.extract_raw_page(0, doc_path))
-        return cause
 
-    def extract_info(self, doc_path):
-        case_date_num = self._find_case_date_num(doc_path)
-        court = self._find_court(doc_path)
-        cause = self._find_cause(doc_path)
-        parties = self._find_parties(doc_path)
+    def extract_info_regex(self, doc_path):
+        #case_num = RegexExtractor.find_case(self._extract_raw_page(0, doc_path))
+        case_date_num = self._find_case_number(doc_path)
+        
+        court = RegexExtractor.find_court(self.extract_raw_page(0, doc_path))
+        cause = RegexExtractor.find_cause(self.extract_raw_page(0, doc_path))
+        parties = RegexExtractor.find_parties(self.extract_raw_page(0, doc_path))
         return {
             "CaseNumber": case_date_num.get('CaseNumber') if case_date_num else None,
             "CaseDate": case_date_num.get('CaseDate') if case_date_num else None,
@@ -66,6 +49,8 @@ class Parser:
             "Causes": cause,
             "Parties": parties,
         }
+    
+
 
 
 test_text2 = """
@@ -86,7 +71,7 @@ doc_name2 = './train_documents/2 ответчика.pdf'
 parser = Parser('.\output237\model-best')
 
 
-dop_info = parser.extract_info(doc_name)
+dop_info = parser.extract_info_regex(doc_name)
 #parties = parser._find_parties(doc_name2)
 text = parser.extract_raw_page(0, doc_name)
 
@@ -96,10 +81,9 @@ pprint(dop_info)
 print("***SPACY***")
 spacy_extractor = SpacyExtractor('.\output237\model-best','.\output237_sums\model-last')
 
-doc = spacy_extractor.find_tags_nlp(text)
-sums_doc = spacy_extractor.find_tags_sums(text)
 
-data = spacy_extractor.extract_all(doc, sums_doc)
+
+data = spacy_extractor.extract_all(text)
 
 
 
