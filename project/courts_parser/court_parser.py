@@ -5,13 +5,16 @@ from datetime import datetime
 from spacy_extractor import SpacyExtractor
 import fitz
 import os
+import json
 
 
 class Parser:
     """Класс описывающий разбор документов"""
     pre = Preprocessor()
-    def __init__(self, model_path) -> None:
-        self.model_path = model_path
+    
+
+    def __init__(self, main_model_path, sum_model_path) -> None:
+        self.spacy_extractor = SpacyExtractor(main_model_path, sum_model_path)
 
     def extract_raw_page(self, page, doc_path):
         text = ''
@@ -49,5 +52,8 @@ class Parser:
             "Causes": cause,
             "Parties": parties,
         }
+    
+    def extract_info_spacy(self, text):
+        return json.dumps(self.spacy_extractor.extract_all(text), ensure_ascii=False)
 
 

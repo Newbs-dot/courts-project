@@ -6,7 +6,7 @@ from difflib import SequenceMatcher
 
 class SpacyExtractor:
     """Класс для извлечения данных с помощью моделей nlp SpaCy"""
-    
+
     def __init__(self, main_model_path, sums_model_path) -> None:
         self.model_path = main_model_path
         self.sums_model_path = sums_model_path
@@ -80,7 +80,7 @@ class SpacyExtractor:
         """Добавление стороны с проверкой на дубликат"""
         dublicate = False
 
-        if any(party['REQUISITES']):
+        if party['REQUISITES'] and any(party['REQUISITES']):
             #Если есть любой реквизит, то проверить в найденных реквизитах
             for key,req in party['REQUISITES'].items():
                 if req and req in found_requisites:
@@ -88,15 +88,17 @@ class SpacyExtractor:
                     break
                 else:
                     found_requisites.add(req)
+                    
         
         else:
             #Если нет реквизитов, проверить на похожесть в найденных участниках
             for found_party in found_parties:
-                if SequenceMatcher(None, party['PARTY'],found_party).ratio() > 70:
+                if SequenceMatcher(None, party['PARTY'],found_party).ratio() > 0.7:
                     dublicate = True
                     break
-                else:
-                    found_parties.add(party['PARTY'])
+        
+
+        found_parties.add(party['PARTY'])
                     
 
 
@@ -113,20 +115,21 @@ class SpacyExtractor:
                'COURT_INFO': self._extract_court_info(self.general_info_doc),
                'SUMS': self._find_sums(self.sums_doc)}
 
-        return json.dumps(res, ensure_ascii=False)
+        return res
 
     def _extract_court_info(self, doc):
         """Извлечение сути дела, суда, судьи"""
         result = {
-            "COURT": [], 
-            "JUDGE": [],
             "CAUSE":[], 
         }
 
-
         for ent in doc.ents:
-            if ent.label_ in result.keys():
-                result[ent.label_].append(ent.text)
+            if ent.label_ == 'CAUSE':
+                result[ent.label_].append(ent.text)  
+            if ent.label_ == 'COURT':
+                result['COURT'] = RegexExtractor.find_court(ent.text)
+            elif ent.label_ == 'JUDGE':
+                result['JUDGE'] = ent.text
 
         return result
     

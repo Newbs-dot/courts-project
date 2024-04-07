@@ -1,5 +1,5 @@
 import re
-
+from difflib import SequenceMatcher
 INN = re.compile(r'ИНН:?\s+(\d{10}|\d{12})\b', flags = re.MULTILINE | re.IGNORECASE)
 KPP = re.compile(r'КПП:?\s+(\d{9})\b', flags = re.MULTILINE | re.IGNORECASE)
 OGRN = re.compile(r'(ОГРН|ОГРНИП):?\s+(\d{13}|\d{15})\b', flags = re.MULTILINE | re.IGNORECASE)
@@ -21,3 +21,5 @@ print(find_req('ОГРН 1231296060069, КПП   111111111'))
 
 
     
+print(SequenceMatcher(None, 'Федерального государственного унитарного предприятия «Охрана»',
+                      'Федеральное государственное унитарное предприятие «Охрана»').ratio())

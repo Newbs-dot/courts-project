@@ -3,6 +3,7 @@ import re
 INN = re.compile(r'ИНН:?\s+(\d{10}|\d{12})\b', flags = re.MULTILINE | re.IGNORECASE)
 KPP = re.compile(r'КПП:?\s+(\d{9})\b', flags = re.MULTILINE | re.IGNORECASE)
 OGRN = re.compile(r'(ОГРН|ОГРНИП):?\s+(\d{13}|\d{15})\b', flags = re.MULTILINE | re.IGNORECASE)
+COURT = re.compile(r'Арбитражный суд\s+(.*?)(?=в составе|$|\d)',re.IGNORECASE)
 
 
 
@@ -24,8 +25,7 @@ class RegexExtractor:
     @staticmethod
     def find_court(text):
         #TODO Интеллектуальный итд
-        pattern = re.compile(r'Арбитражный суд\s+(.*?)(?=в составе|$)')
-        match = re.search(pattern,text)
+        match = re.search(COURT,text)
         return match.group(0) if match else None
     
     @staticmethod
