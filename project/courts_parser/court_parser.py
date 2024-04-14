@@ -6,6 +6,8 @@ from spacy_extractor import SpacyExtractor
 import fitz
 import os
 import json
+import pymorphy3
+
 
 
 class Parser:
@@ -53,7 +55,40 @@ class Parser:
             "Parties": parties,
         }
     
-    def extract_info_spacy(self, text):
-        return json.dumps(self.spacy_extractor.extract_all(text), ensure_ascii=False)
+    def _normalize_party(self, parties):
+        morph = pymorphy3.MorphAnalyzer()
+        normalized_parties = []
+        for key,values in parties.items():
+            
+            for p in values:
+                value = p['PARTY']      
+                try:
+                    normalized_party = []
+                    parsed_phrase = morph.parse(value)[0]
+                    if 'neut' in parsed_phrase.tag or 'datv' in parsed_phrase.tag and not 'masc' in parsed_phrase.tag:
+                        parsed_phrase = parsed_phrase.inflect({'nomn'})
+                    
+                    normalized_party.append(parsed_phrase.word)
+
+                    
+
+                except Exception as e:
+                    print(f'Error:{e}')
+
+            normalized_parties[key]['PARTY'].append(normalized_party)
+        
+
+    def extract_info_spacy(self, text, doc_path):
+        #TODO normalize parties
+        case_date_num = self._find_case_number(doc_path)
+        case_date_num = {
+            "CASE_NUMBER": case_date_num.get('CaseNumber'),
+            "CASE_DATE": case_date_num.get('CaseDate')
+        }
+        spacy_result = self.spacy_extractor.extract_all(text) | case_date_num
+
+        #parties = spacy_result['PARTIES']
+        #print(self._normalize_party(parties))
+        return json.dumps(spacy_result, ensure_ascii=False)
 
 

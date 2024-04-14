@@ -9,15 +9,15 @@ db = DocBin()
 import time
 
 
-f = open('datasets/238_sums.json', 'r', encoding='utf-8')
-train_data = json.load(f)[200:]
+f = open('datasets/300_sums.json', 'r', encoding='utf-8')
+train_data = json.load(f)[240:]
 
-# with open('datasets/238_sums.json', 'w', encoding='utf-8') as f:
+# with open('datasets/300_main.json', 'w', encoding='utf-8') as f:
 #     data = []
 #     for document in tqdm(train_data):
 #         labels = []
 #         for label in document['label']:
-#             if label['labels'][0] in ('DEBT','FEE','PENALTY','PENNY','LOSS','PERCENTS','SUM','INTELLECTUAL-DEBT','MORAL-EXPENSES','COMPENSATION','FORFEIT','DEBT-PART','UNJUST-ENRICHMENT'):
+#             if label['labels'][0] not in ('DEBT','FEE','PENALTY','PENNY','LOSS','PERCENTS','SUM','INTELLECTUAL-DEBT','MORAL-EXPENSES','COMPENSATION','FORFEIT','DEBT-PART','UNJUST-ENRICHMENT'):
 #                 labels.append(label)
 
 #         data.append(
@@ -51,7 +51,7 @@ for document in tqdm(train_data):
     # doc.spans["sc"] = group
     db.add(doc)
     
-db.to_disk('./label_studio_valid_sums.spacy')
+db.to_disk('./last_valid_sums.spacy')
 
 
 

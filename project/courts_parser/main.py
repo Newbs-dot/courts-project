@@ -23,7 +23,7 @@ parser = Parser(main_model,sums_model)
 print("***SPACY***")
 
 text = parser.extract_raw_page(0, doc_name3)
-data = parser.extract_info_spacy(text)
+data = parser.extract_info_spacy(text,doc_name3)
 pprint(json.loads(data))
 
 
