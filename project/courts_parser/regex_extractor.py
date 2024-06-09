@@ -4,7 +4,7 @@ INN = re.compile(r'ИНН:?\s+(\d{10}|\d{12})\b', flags = re.MULTILINE | re.IGNO
 KPP = re.compile(r'КПП:?\s+(\d{9})\b', flags = re.MULTILINE | re.IGNORECASE)
 OGRN = re.compile(r'(ОГРН|ОГРНИП):?\s+(\d{13}|\d{15})\b', flags = re.MULTILINE | re.IGNORECASE)
 COURT = re.compile(r'Арбитражный суд\s+(.*?)(?=в составе|$|\d)',re.IGNORECASE)
-
+DECISION = re.compile(r'(?:определил:|решил:)(.*?)\s+(?=решение арбитражного|определение|решение может быть)', re.IGNORECASE)
 
 
 class RegexExtractor:
@@ -50,6 +50,12 @@ class RegexExtractor:
 
         return parties
     
+    @staticmethod
+    def extract_decision(text):
+        decision = re.search(DECISION,text)
+        return {'DECISION':decision.group(1) if decision else None}
+
+
     @staticmethod
     def extract_requisites(text):
         inn = re.search(INN,text)

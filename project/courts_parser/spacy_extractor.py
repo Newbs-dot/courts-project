@@ -3,6 +3,7 @@ from regex_extractor import RegexExtractor
 import json
 from difflib import SequenceMatcher
 
+SIMILARITY_RATE = 0.7
 
 class SpacyExtractor:
     """Класс для извлечения данных с помощью моделей nlp SpaCy"""
@@ -93,7 +94,7 @@ class SpacyExtractor:
         else:
             #Если нет реквизитов, проверить на похожесть в найденных участниках
             for found_party in found_parties:
-                if SequenceMatcher(None, party['PARTY'],found_party).ratio() > 0.7:
+                if SequenceMatcher(None, party['PARTY'],found_party).ratio() > SIMILARITY_RATE:
                     dublicate = True
                     break
         
@@ -105,8 +106,6 @@ class SpacyExtractor:
         if not dublicate:
             parties[side].append(party)
         
-
-
     def extract_all(self, text):
         """Извлечение всей информации из текста документа"""
         self._find_docs(text)

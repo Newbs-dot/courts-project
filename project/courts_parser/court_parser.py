@@ -5,9 +5,12 @@ from datetime import datetime
 from spacy_extractor import SpacyExtractor
 import fitz
 import os
+import io
 import json
 import pymorphy3
-
+from PIL import Image
+import pytesseract
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 
 class Parser:
@@ -28,6 +31,16 @@ class Parser:
 
         return text
     
+    def extract_all_pages(self, doc_path):
+        text = ''
+        pdf = fitz.open(doc_path)
+        for p in range(pdf.page_count):
+            page = pdf[p]
+            t = page.get_text('text')
+            t = self.pre.clear_text(t)
+            text+=t
+        return text
+
     def _find_case_number(self, doc_path):
         #Поиск в названии
         doc_name = os.path.basename(doc_path)
@@ -77,18 +90,36 @@ class Parser:
 
             normalized_parties[key]['PARTY'].append(normalized_party)
         
+    def _extract_decision(self, doc_path):
+        text = self.extract_all_pages(doc_path)
+        decision = RegexExtractor.extract_decision(text)
+        return decision
 
     def extract_info_spacy(self, text, doc_path):
         #TODO normalize parties
         case_date_num = self._find_case_number(doc_path)
+        decision = self._extract_decision(doc_path)
+
         case_date_num = {
-            "CASE_NUMBER": case_date_num.get('CaseNumber'),
-            "CASE_DATE": case_date_num.get('CaseDate')
+            "CASE_NUMBER": case_date_num.get('CaseNumber') if case_date_num else None,
+            "CASE_DATE": case_date_num.get('CaseDate') if case_date_num else None
         }
-        spacy_result = self.spacy_extractor.extract_all(text) | case_date_num
+        spacy_result = self.spacy_extractor.extract_all(text) | case_date_num | decision
 
         #parties = spacy_result['PARTIES']
         #print(self._normalize_party(parties))
         return json.dumps(spacy_result, ensure_ascii=False)
 
+    def text_from_images(self, doc_path):
+        text = ''
+        doc = fitz.open(doc_path)
 
+        for i in range(len(doc)):
+            for img in doc.get_page_images(i):
+                xref = img[0]
+                
+                pix = fitz.Pixmap(doc, xref)
+                img_bytes = pix.tobytes()
+                text+=pytesseract.image_to_string(Image.open(io.BytesIO(img_bytes)), lang='rus')
+
+        return text
