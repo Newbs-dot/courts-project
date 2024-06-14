@@ -2,6 +2,7 @@ import spacy
 from regex_extractor import RegexExtractor
 import json
 from difflib import SequenceMatcher
+from text_processor import TextProcessor
 
 SIMILARITY_RATE = 0.7
 
@@ -57,7 +58,8 @@ class SpacyExtractor:
                                 side=side, 
                                 party=party,
                                 found_parties=found_parties,
-                                found_requisites=found_requisites)
+                                found_requisites=found_requisites,
+                                is_third_party=False)
                 
 
             elif doc.ents[e].label_ == "THIRD-PARTY":
@@ -72,12 +74,13 @@ class SpacyExtractor:
                                 side=side, 
                                 party=party,
                                 found_parties=found_parties,
-                                found_requisites=found_requisites)
+                                found_requisites=found_requisites,
+                                is_third_party=True)
 
 
         return parties
 
-    def _add_party(self, parties, side, party, found_requisites, found_parties):
+    def _add_party(self, parties, side, party, found_requisites, found_parties, is_third_party):
         """Добавление стороны с проверкой на дубликат"""
         dublicate = False
 
@@ -94,12 +97,19 @@ class SpacyExtractor:
         else:
             #Если нет реквизитов, проверить на похожесть в найденных участниках
             for found_party in found_parties:
-                if SequenceMatcher(None, party['PARTY'],found_party).ratio() > SIMILARITY_RATE:
-                    dublicate = True
-                    break
-        
-
-        found_parties.add(party['PARTY'])
+                if is_third_party:
+                    if SequenceMatcher(None, party['THIRD-PARTY'],found_party).ratio() > SIMILARITY_RATE:
+                        dublicate = True
+                        break
+                else:
+                    if SequenceMatcher(None, party['PARTY'],found_party).ratio() > SIMILARITY_RATE:
+                        dublicate = True
+                        break
+            
+        if is_third_party:
+            found_parties.add(party['THIRD-PARTY'])
+        else:
+            found_parties.add(party['PARTY'])
                     
 
 
@@ -127,6 +137,7 @@ class SpacyExtractor:
                 result[ent.label_].append(ent.text)  
             if ent.label_ == 'COURT':
                 result['COURT'] = RegexExtractor.find_court(ent.text)
+                #result['COURT'] = TextProcessor.clear_result(court)
             elif ent.label_ == 'JUDGE':
                 result['JUDGE'] = ent.text
 

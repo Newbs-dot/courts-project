@@ -15,10 +15,6 @@ phrase8 = 'публичному акционерному обществу «Мо
 for p in phrase8.split(' '):
     try:
         parsed_phrase = morph.parse(p)[0]
-<<<<<<< HEAD
-=======
-        print(parsed_phrase.tag)
->>>>>>> 7aad5a8bad13b2ad84dc4b99044c009788bdaa9b
         if 'neut' in parsed_phrase.tag or 'datv' in parsed_phrase.tag and not 'masc' in parsed_phrase.tag:
             parsed_phrase = parsed_phrase.inflect({'nomn'})
         

@@ -1,5 +1,5 @@
 import spacy
-from preprocessor import Preprocessor
+from text_processor import TextProcessor
 from regex_extractor import RegexExtractor
 from datetime import datetime
 from spacy_extractor import SpacyExtractor
@@ -10,13 +10,12 @@ import json
 import pymorphy3
 from PIL import Image
 import pytesseract
+
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 
 class Parser:
     """Класс описывающий разбор документов"""
-    pre = Preprocessor()
-    
 
     def __init__(self, main_model_path, sum_model_path) -> None:
         self.spacy_extractor = SpacyExtractor(main_model_path, sum_model_path)
@@ -27,7 +26,7 @@ class Parser:
 
         page = pdf[page]
         text = page.get_text('text')
-        text = self.pre.clear_text(text)
+        text = TextProcessor.clear_text(text)
 
         return text
     
@@ -37,7 +36,7 @@ class Parser:
         for p in range(pdf.page_count):
             page = pdf[p]
             t = page.get_text('text')
-            t = self.pre.clear_text(t)
+            t = TextProcessor.clear_text(t)
             text+=t
         return text
 
@@ -70,25 +69,26 @@ class Parser:
     
     def _normalize_party(self, parties):
         morph = pymorphy3.MorphAnalyzer()
-        normalized_parties = []
-        for key,values in parties.items():
-            
-            for p in values:
-                value = p['PARTY']      
-                try:
-                    normalized_party = []
-                    parsed_phrase = morph.parse(value)[0]
-                    if 'neut' in parsed_phrase.tag or 'datv' in parsed_phrase.tag and not 'masc' in parsed_phrase.tag:
-                        parsed_phrase = parsed_phrase.inflect({'nomn'})
-                    
-                    normalized_party.append(parsed_phrase.word)
+        
+        for key,item in parties.items():
+            for party_num in range(len(item)):
+                value = item[party_num]['PARTY']
+                normalized_party = []
+                for p in value.split(' '):
+                    try:
+                        parsed_phrase = morph.parse(p)[0]
+                        if 'neut' in parsed_phrase.tag or 'datv' in parsed_phrase.tag and not 'masc' in parsed_phrase.tag:
+                            parsed_phrase = parsed_phrase.inflect({'nomn'})
+                        
+                        
+                        normalized_party.append(parsed_phrase.word)
 
-                    
-
-                except Exception as e:
-                    print(f'Error:{e}')
-
-            normalized_parties[key]['PARTY'].append(normalized_party)
+                    except Exception as e:
+                        print(f'Error:{e}')
+                
+                normalized_party = ' '.join(normalized_party)
+                #normalized_party = TextProcessor.clear_result(normalized_party)
+                parties[key][party_num]['PARTY'] = normalized_party
         
     def _extract_decision(self, doc_path):
         text = self.extract_all_pages(doc_path)
@@ -104,10 +104,11 @@ class Parser:
             "CASE_NUMBER": case_date_num.get('CaseNumber') if case_date_num else None,
             "CASE_DATE": case_date_num.get('CaseDate') if case_date_num else None
         }
-        spacy_result = self.spacy_extractor.extract_all(text) | case_date_num | decision
-
+        court_info = self.spacy_extractor.extract_all(text)
+        spacy_result = court_info | case_date_num | decision
+        #self._normalize_party(spacy_result['PARTIES'])
         #parties = spacy_result['PARTIES']
-        #print(self._normalize_party(parties))
+        
         return json.dumps(spacy_result, ensure_ascii=False)
 
     def text_from_images(self, doc_path):
