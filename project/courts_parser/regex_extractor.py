@@ -1,9 +1,9 @@
 import re
 
-INN = re.compile(r'ИНН:?\s+(\d{10}|\d{12})\b', flags = re.MULTILINE | re.IGNORECASE)
-KPP = re.compile(r'КПП:?\s+(\d{9})\b', flags = re.MULTILINE | re.IGNORECASE)
-OGRN = re.compile(r'(ОГРН|ОГРНИП):?\s+(\d{13}|\d{15})\b', flags = re.MULTILINE | re.IGNORECASE)
-COURT = re.compile(r'Арбитражный суд\s+(.*?)(?=в составе|$|\d)',re.IGNORECASE)
+INN = re.compile(r'ИНН:?\s+(\d{10}|\d{12})\b', flags=re.MULTILINE | re.IGNORECASE)
+KPP = re.compile(r'КПП:?\s+(\d{9})\b', flags=re.MULTILINE | re.IGNORECASE)
+OGRN = re.compile(r'(ОГРН|ОГРНИП):?\s+(\d{13}|\d{15})\b', flags=re.MULTILINE | re.IGNORECASE)
+COURT = re.compile(r'Арбитражный суд\s+(.*?)(?=в составе|$|\d)', re.IGNORECASE)
 DECISION = re.compile(r'(?:определил:|решил:)(.*?)\s+(?=решение арбитражного|определение|решение может быть)', re.IGNORECASE)
 
 
@@ -12,7 +12,7 @@ class RegexExtractor:
     @staticmethod
     def find_cause(text):
         #TODO интелелктуальной о запрете, split multiple causes
-        pattern = r'о (взыскании|вынесении|признании|обязании|привлечении|запрете)(.*?)(?=при участии|представители|третье лицо|лица|руководствуясь|установил|без участия)'
+        pattern = r'о (взыскании|понуждении|вынесении|признании|обязании|привлечении|запрете|выдаче судебного приказа)(.*?)(?=при участии|представители|третье лицо|лица|руководствуясь|установил|без участия)'
         match = re.search(pattern,text, re.IGNORECASE)
         return match.group(0) if match else None
     
@@ -52,19 +52,19 @@ class RegexExtractor:
     
     @staticmethod
     def extract_decision(text):
-        decision = re.search(DECISION,text)
-        return {'DECISION':decision.group(1) if decision else None}
+        decision = re.search(DECISION, text)
+        return {'DECISION': decision.group(1) if decision else None}
 
 
     @staticmethod
     def extract_requisites(text):
-        inn = re.search(INN,text)
-        kpp = re.search(KPP,text)
-        ogrn = re.search(OGRN,text)
+        inn = re.search(INN, text)
+        kpp = re.search(KPP, text)
+        ogrn = re.search(OGRN, text)
         req = {
-            'ИНН':inn.group(1) if inn else None,
-            'КПП':kpp.group(1) if kpp else None,
-            'ОГРН':ogrn.group(2) if ogrn else None,
+            'ИНН': inn.group(1) if inn else None,
+            'КПП': kpp.group(1) if kpp else None,
+            'ОГРН': ogrn.group(2) if ogrn else None,
             #'Адрес':
         }
         return req

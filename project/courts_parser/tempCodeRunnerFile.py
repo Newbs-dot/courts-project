@@ -1,1 +1,0 @@
-text = parser.extract_raw_page(0,doc_w_img)
