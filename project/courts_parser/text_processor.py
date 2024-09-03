@@ -1,5 +1,6 @@
 import re
 
+
 class TextProcessor:
     """Класс для обработки текста"""
     @classmethod
@@ -16,12 +17,3 @@ class TextProcessor:
         text = cls._clear_newline_symbols(text)
         text = cls._cleanup_excess_spaces(text)
         return text
-    
-    # @classmethod
-    # def clear_result(cls,text):
-    #     if text:
-    #         text = text.replace('"','')
-    #         text = text.replace('руб.','')
-    #         text = text.replace('общество с ограниченной ответственностью','ООО')
-    #         text = text.replace('Арбитражный суд','АС')
-    #         return text.strip()

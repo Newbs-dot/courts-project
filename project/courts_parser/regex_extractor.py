@@ -12,22 +12,22 @@ class RegexExtractor:
     @staticmethod
     def find_cause(text):
         #TODO интелелктуальной о запрете, split multiple causes
-        pattern = r'о (взыскании|понуждении|вынесении|признании|обязании|привлечении|запрете|выдаче судебного приказа)(.*?)(?=при участии|представители|третье лицо|лица|руководствуясь|установил|без участия)'
+        pattern = r'о (взыскании|вынесении|признании|обязании|привлечении|запрете)(.*?)(?=при участии|представители|третье лицо|лица|руководствуясь|установил|без участия)'
         match = re.search(pattern,text, re.IGNORECASE)
         return match.group(0) if match else None
-    
+
     @staticmethod
     def find_case(text):
         pattern = r'дело №\s*(.*?)(?:$|\s)'
         match = re.search(pattern,text, re.IGNORECASE)
         return match.group(1) if match else None
-    
+
     @staticmethod
     def find_court(text):
         #TODO Интеллектуальный итд
         match = re.search(COURT,text)
         return match.group(0) if match else None
-    
+
     @staticmethod
     def find_parties(text):
         #Находим предполагаемых истцов и ответчиков
@@ -39,17 +39,17 @@ class RegexExtractor:
         #(?:заявлени[юяе]:? |иску\s|истец[\s:–]*|взыскателя[\s:–]*)(.*?) (?=\(ИНН|\(ОГРН|\(|$).*? [кК] (?:ответчику[\s:–]*|ответчикам[\s:–]*)?(?:заинтересованному лицу[\s:–]*)?(.*?)(?=\(ИНН|\(ОГРН|\(|$).*?(?:треть[ие] лиц[ао][\s:–]*)?(.*?) (?=\(ИНН|\(ОГРН|\(|$)?
         #pattern = re.compile(r'(?:заявлени[юяе]:? |иску\s|истец[\s:–]*|взыскателя[\s:–]*)(.*?) (?=\(ИНН|\(ОГРН|\(|$).*? [кК] (?:ответчику[\s:–]*)?(?:заинтересованному лицу[\s:–]*)?(.*?) (?=\(ИНН|\(ОГРН|\(|$).*?(?:треть[ие] лиц[ао][\s:–]*)?(.*?) (?=\(ИНН|\(ОГРН|\(|$)?',re.IGNORECASE)
         pattern =re.compile(r'(?:заявлени[юяе]:?\s+|иску\s+|истец[\s:–]*|взыскателя[\s:–]*)(.*?)\s+[кК]\s+(.*?)\s+о (взыскании|вынесении|признании|обязании|привлечении|запрете)',re.IGNORECASE)
-        
-        parties = {'PLAINTIFFS':[], 
-                   'DEFENDANTS':[]}
+
+        parties = {'PLAINTIFFS': [],
+                   'DEFENDANTS': []}
 
         res = re.search(pattern,text)
         if res:
-            parties['PLAINTIFFS'].append({'DATA': res.group(1),'SPAN': res.span(1)})
-            parties['DEFENDANTS'].append({'DATA': res.group(2),'SPAN': res.span(2)})
+            parties['PLAINTIFFS'].append({'DATA': res.group(1), 'SPAN': res.span(1)})
+            parties['DEFENDANTS'].append({'DATA': res.group(2), 'SPAN': res.span(2)})
 
         return parties
-    
+
     @staticmethod
     def extract_decision(text):
         decision = re.search(DECISION, text)
